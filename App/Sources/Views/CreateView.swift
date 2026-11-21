@@ -11,14 +11,14 @@ struct CreateView: View {
                 VStack(spacing: 0) {
                     Spacer(minLength: 8)
                     DestinationBar()
-                        .padding(.bottom, geo.size.height > 700 ? 30 : 16)
+                        .padding(.bottom, geo.size.height > 760 ? 22 : 10)
                     switch model.recorder.state {
                     case .finished(let take):
                         ReviewCard(take: take).frame(maxWidth: 620).transition(.scale(scale: 0.96).combined(with: .opacity))
                     default:
-                        RecordingStage(compact: geo.size.height < 680)
+                        RecordingStage(compact: geo.size.height < 740)
                     }
-                    Spacer(minLength: 20)
+                    Spacer(minLength: 16)
                     RecentStrip().frame(maxWidth: 760)
                         .padding(.bottom, 18)
                 }
@@ -176,8 +176,8 @@ struct RecordingStage: View {
     var body: some View {
         let state = model.recorder.state
         let active = state == .recording || state == .paused || state == .starting
-        VStack(spacing: compact ? 16 : 24) {
-            RecordOrb(state: state, meter: model.recorder.meter, size: compact ? 138 : 172) { model.toggleRecording() }
+        VStack(spacing: compact ? 12 : 18) {
+            RecordOrb(state: state, meter: model.recorder.meter, size: compact ? 128 : 160) { model.toggleRecording() }
             TimerReadout(meter: model.recorder.meter, state: state)
             LiveWaveform(meter: model.recorder.meter, active: active)
                 .frame(height: compact ? 54 : 70)
@@ -245,7 +245,7 @@ struct RecordOrb: View {
             orb
             orbIcon
         }
-        .frame(width: size * 1.7, height: size * 1.7)
+        .frame(width: size * 1.45, height: size * 1.45)
         .contentShape(Circle())
         .onTapGesture(perform: action)
         .onHover { hovering = $0 }

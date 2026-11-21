@@ -55,7 +55,7 @@ extension Color {
 private func lightPalette(top: UInt32, bottom: UInt32, glow: UInt32, text: UInt32, secondary: UInt32, accent: UInt32,
                           record: UInt32, wave: [UInt32], motif: UInt32, onAccent: UInt32 = 0xFFFFFF, motifOpacity: Double = 0.55) -> ThemePalette {
     ThemePalette(backgroundTop: Color(hex: top), backgroundBottom: Color(hex: bottom), glow: Color(hex: glow, opacity: 0.85),
-                 surface: Color.white.opacity(0.58), surfaceStrong: Color.white.opacity(0.82), stroke: Color(hex: text, opacity: 0.08),
+                 surface: Color.white.opacity(0.66), surfaceStrong: Color.white.opacity(0.86), stroke: Color(hex: text, opacity: 0.08),
                  text: Color(hex: text), secondaryText: Color(hex: secondary), accent: Color(hex: accent),
                  accentSoft: Color(hex: accent, opacity: 0.14), onAccent: Color(hex: onAccent), record: Color(hex: record),
                  wave: wave.map { Color(hex: $0) }, motif: Color(hex: motif), motifOpacity: motifOpacity,

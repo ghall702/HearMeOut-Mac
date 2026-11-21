@@ -156,8 +156,12 @@ struct TopBar: View {
             }
         }
         .padding(4)
-        .background(Capsule().fill(.ultraThinMaterial))
-        .overlay(Capsule().fill(theme.palette.surface))
+        .background {
+            ZStack {
+                Capsule().fill(.ultraThinMaterial)
+                Capsule().fill(theme.palette.surface)
+            }
+        }
         .overlay(Capsule().strokeBorder(theme.palette.stroke))
     }
 }

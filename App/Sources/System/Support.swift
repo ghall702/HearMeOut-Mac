@@ -129,7 +129,10 @@ extension Double {
 extension Date {
     var friendlyText: String {
         let cal = Calendar.current
-        let time = formatted(date: .omitted, time: .shortened)
+        let tf = DateFormatter()
+        tf.locale = Locale(identifier: "en_GB")
+        tf.dateFormat = "HH:mm"
+        let time = tf.string(from: self)
         if cal.isDateInToday(self) { return "Today, \(time)" }
         if cal.isDateInYesterday(self) { return "Yesterday, \(time)" }
         let f = DateFormatter()

@@ -377,8 +377,12 @@ private struct MotifPainter {
             dune.closeSubpath()
             ctx.fill(dune, with: .color((i == 1 ? accent : ink).opacity(0.16 + Double(i) * 0.08)))
         }
-        let sunC = CGPoint(x: w * 0.16, y: h * 0.22)
-        ctx.fill(Path(ellipseIn: CGRect(x: sunC.x - 46, y: sunC.y - 46, width: 92, height: 92)), with: .color(wave.last!.opacity(0.45)))
+        let sunC = CGPoint(x: w * 0.8, y: h * 0.2)
+        let sunR: CGFloat = 70
+        ctx.fill(Path(ellipseIn: CGRect(x: sunC.x - sunR * 2, y: sunC.y - sunR * 2, width: sunR * 4, height: sunR * 4)),
+                 with: .radialGradient(Gradient(colors: [wave.last!.opacity(0.35), wave.last!.opacity(0)]), center: sunC, startRadius: sunR * 0.6, endRadius: sunR * 2))
+        ctx.fill(Path(ellipseIn: CGRect(x: sunC.x - sunR, y: sunC.y - sunR, width: sunR * 2, height: sunR * 2)),
+                 with: .radialGradient(Gradient(colors: [wave.last!.opacity(0.55), wave.first!.opacity(0.25)]), center: sunC, startRadius: 0, endRadius: sunR))
         // A small cactus bloom
         var cactus = Path()
         let cx = w * 0.84, cb = h * 0.8

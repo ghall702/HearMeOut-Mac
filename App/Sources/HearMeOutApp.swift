@@ -31,7 +31,7 @@ struct HearMeOutApp: App {
         .defaultSize(width: 1120, height: 780)
         .commands { AppCommands(model: model) }
 
-        MenuBarExtra(isInserted: Binding(get: { model.settings.showMenuBar }, set: { model.settings.showMenuBar = $0 })) {
+        MenuBarExtra(isInserted: Binding(get: { model.settings.showMenuBar }, set: { v in if model.settings.showMenuBar != v { model.settings.showMenuBar = v } })) {
             MenuBarView().environmentObject(model)
         } label: {
             MenuBarIcon(recorder: model.recorder)
@@ -84,13 +84,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         guard env["HMO_DEMO"] != nil else { return }
         Self.log("did finish launching")
         if let model = AppDelegate.model {
-            let counter = ChangeCounter()
-            counter.cancellable = model.objectWillChange.sink { _ in counter.increment() }
-            Self.counter = counter
+            let all = ChangeCounter(), engine = ChangeCounter(), recorder = ChangeCounter(), avatars = ChangeCounter(), settings = ChangeCounter()
+            all.cancellables = [
+                model.objectWillChange.sink { _ in all.increment() },
+                model.engine.objectWillChange.sink { _ in engine.increment() },
+                model.recorder.objectWillChange.sink { _ in recorder.increment() },
+                model.avatars.objectWillChange.sink { _ in avatars.increment() },
+                model.$settings.sink { _ in settings.increment() },
+            ]
+            Self.counter = all
             DispatchQueue.global().async {
-                for second in 1...12 {
+                for second in 1...8 {
                     Thread.sleep(forTimeInterval: 1)
-                    Self.log("t+\(second)s model changes: \(counter.take())")
+                    Self.log("t+\(second)s changes all=\(all.take()) engine=\(engine.take()) recorder=\(recorder.take()) avatars=\(avatars.take()) settings=\(settings.take())")
                 }
             }
         }
@@ -192,7 +198,7 @@ struct WindowConfigurator: NSViewRepresentable {
 final class ChangeCounter: @unchecked Sendable {
     private let lock = NSLock()
     private var count = 0
-    var cancellable: AnyCancellable?
+    var cancellables: [AnyCancellable] = []
     func increment() { lock.lock(); count += 1; lock.unlock() }
     func take() -> Int { lock.lock(); defer { count = 0; lock.unlock() }; return count }
 }
