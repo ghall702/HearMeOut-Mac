@@ -22,6 +22,18 @@ Apple Foundation Models · URLSession background transfers · Keychain. No Elect
 | **16 themes** | Botanical Garden, Coastal Morning, Sunset Beach, Lavender Fields, Ocean Depths, Rosewater, Forest Retreat, Midnight Studio, Cherry Blossom, Golden Hour, Alpine Air, Desert Bloom, Wildflower Meadow, Minimal Linen, Aurora, Espresso — each with light and dark palettes, its own typography, waveform colours and a restrained illustrated motif. Preview without applying. |
 | **Menu bar & shortcuts** | Optional themed menu bar panel (record/stop, account, latest link). Global shortcuts: ⌃⌥⌘R record/stop, ⌃⌥⌘H open, ⌃⌥⌘L copy latest link — configurable, no extra permissions. |
 
+## Screenshots
+
+Captured by CI from the real Release build using built-in demo data (fictional accounts, no network).
+
+| | |
+|---|---|
+| ![Recording — Botanical Garden](docs/screenshots/recording-botanical-light.jpg) | ![Recording — Aurora (dark)](docs/screenshots/recording-aurora-dark.jpg) |
+| ![Library — Botanical Garden](docs/screenshots/library-botanical-light.jpg) | ![Library — Ocean Depths (dark)](docs/screenshots/library-ocean-dark.jpg) |
+| ![Activity — Rosewater](docs/screenshots/activity-rosewater-light.jpg) | ![Theme gallery — Forest Retreat (dark)](docs/screenshots/themes-forest-dark.jpg) |
+| ![Transcription settings — Lavender Fields](docs/screenshots/settings-lavender-light.jpg) | ![Welcome — Sunset Beach](docs/screenshots/onboarding-sunset-light.jpg) |
+| ![Create — Cherry Blossom](docs/screenshots/create-cherry-light.jpg) | ![Create — Espresso (dark)](docs/screenshots/create-espresso-dark.jpg) |
+
 ## How it talks to Hear Me Out
 
 It follows the [technical handbook](docs/HANDBOOK-ADDENDUM.md) exactly: `POST /uploads` → `PUT` the bytes directly to

@@ -20,7 +20,8 @@ Status key: ✅ automated and passing in CI · 🖥️ needs a real Mac with mic
 
 ## CI on macOS (every push)
 * Release build for arm64 with Xcode 26 ✅ · signature/entitlements verified ✅ · launch smoke test with demo data ✅ · DMG ✅
-* Screenshots of every main screen in 16 theme/appearance combinations 👀 (commit with `[shots]`)
+* Screenshots of every main screen in 16 theme/appearance combinations 👀 (commit with `[shots]`) — all 16 captured and reviewed (build 12); two design passes applied from them
+* An idle-redraw loop (≈100 state changes/second, caused by the menu bar binding) was found by these screenshot runs and fixed
 
 ## Manual checks on your Macs 🖥️
 1. Connect three accounts (Google once the backend is deployed; API key before). Switch repeatedly; check avatar,
