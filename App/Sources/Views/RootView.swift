@@ -61,7 +61,7 @@ struct RootView: View {
         }
         .onAppear { model.systemScheme = systemScheme }
         .onChange(of: systemScheme) { _, s in model.systemScheme = s }
-        .sheet(isPresented: $model.showImportSheet) { ImportSheet().environment(\.hmoTheme, resolved) }
+        .sheet(isPresented: $model.showImportSheet) { ImportSheet().environment(\.hmoTheme, resolved).environmentObject(model) }
         .frame(minWidth: 860, minHeight: 600)
     }
 

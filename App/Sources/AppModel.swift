@@ -145,8 +145,9 @@ final class AppModel: ObservableObject {
     private var toastTask: Task<Void, Never>?
 
     init(demo: DemoScenario? = nil) {
-        isDemo = demo != nil
-        if demo != nil {
+        let demoMode = demo != nil
+        isDemo = demoMode
+        if demoMode {
             AppPaths.demoRoot = FileManager.default.temporaryDirectory.appendingPathComponent("HearMeOutDemo-\(UUID().uuidString)")
         }
         let models = ModelLibrary()
@@ -157,7 +158,7 @@ final class AppModel: ObservableObject {
         self.devices = AudioDeviceManager()
         self.recorder = RecordingController()
 
-        let stored = isDemo ? [] : (JSONStore<[QueueItem]>(url: AppPaths.queueFile).load() ?? [])
+        let stored = demoMode ? [] : (JSONStore<[QueueItem]>(url: AppPaths.queueFile).load() ?? [])
         self.engine = ProcessingEngine(items: stored)
         if !isDemo {
             accounts = JSONStore<[Account]>(url: AppPaths.accountsFile).load() ?? []
