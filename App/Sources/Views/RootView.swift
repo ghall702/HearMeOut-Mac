@@ -158,7 +158,7 @@ struct TopBar: View {
         .padding(4)
         .background {
             ZStack {
-                Capsule().fill(.ultraThinMaterial)
+                Capsule().fill(theme.cardBase)
                 Capsule().fill(theme.palette.surface)
             }
         }

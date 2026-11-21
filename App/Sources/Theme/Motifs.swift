@@ -306,12 +306,12 @@ private struct MotifPainter {
 
     func blossom() {
         var branch = Path()
-        branch.move(to: CGPoint(x: w + 10, y: h * 0.08))
-        branch.addCurve(to: CGPoint(x: w * 0.58, y: h * 0.26), control1: CGPoint(x: w * 0.86, y: h * 0.02), control2: CGPoint(x: w * 0.7, y: h * 0.3))
-        branch.move(to: CGPoint(x: w * 0.8, y: h * 0.1))
-        branch.addQuadCurve(to: CGPoint(x: w * 0.74, y: h * 0.0), control: CGPoint(x: w * 0.76, y: h * 0.07))
+        branch.move(to: CGPoint(x: w + 10, y: h * 0.18))
+        branch.addCurve(to: CGPoint(x: w * 0.66, y: h * 0.36), control1: CGPoint(x: w * 0.9, y: h * 0.12), control2: CGPoint(x: w * 0.76, y: h * 0.4))
+        branch.move(to: CGPoint(x: w * 0.84, y: h * 0.2))
+        branch.addQuadCurve(to: CGPoint(x: w * 0.8, y: h * 0.12), control: CGPoint(x: w * 0.81, y: h * 0.17))
         ctx.stroke(branch, with: .color(ink.opacity(0.6)), style: StrokeStyle(lineWidth: 3, lineCap: .round))
-        let spots: [(CGFloat, CGFloat, CGFloat)] = [(0.95, 0.07, 16), (0.86, 0.1, 13), (0.78, 0.16, 18), (0.7, 0.2, 12), (0.63, 0.25, 15), (0.82, 0.04, 11), (0.74, 0.02, 10)]
+        let spots: [(CGFloat, CGFloat, CGFloat)] = [(0.96, 0.17, 16), (0.88, 0.2, 13), (0.81, 0.26, 18), (0.74, 0.3, 12), (0.68, 0.35, 15), (0.85, 0.15, 11), (0.8, 0.12, 10)]
         for s in spots { flower(at: CGPoint(x: w * s.0, y: h * s.1), radius: s.2, color: accent.opacity(0.45), centre: wave.last!.opacity(0.8)) }
         var rng = SeededRandom(9)
         for _ in 0..<12 {

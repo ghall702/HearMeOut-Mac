@@ -83,23 +83,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let env = ProcessInfo.processInfo.environment
         guard env["HMO_DEMO"] != nil else { return }
         Self.log("did finish launching")
-        if let model = AppDelegate.model {
-            let all = ChangeCounter(), engine = ChangeCounter(), recorder = ChangeCounter(), avatars = ChangeCounter(), settings = ChangeCounter()
-            all.cancellables = [
-                model.objectWillChange.sink { _ in all.increment() },
-                model.engine.objectWillChange.sink { _ in engine.increment() },
-                model.recorder.objectWillChange.sink { _ in recorder.increment() },
-                model.avatars.objectWillChange.sink { _ in avatars.increment() },
-                model.$settings.sink { _ in settings.increment() },
-            ]
-            Self.counter = all
-            DispatchQueue.global().async {
-                for second in 1...8 {
-                    Thread.sleep(forTimeInterval: 1)
-                    Self.log("t+\(second)s changes all=\(all.take()) engine=\(engine.take()) recorder=\(recorder.take()) avatars=\(avatars.take()) settings=\(settings.take())")
-                }
-            }
-        }
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         guard let name = env["HMO_SNAPSHOT_NAME"] else { return }
@@ -123,8 +106,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             exit(0)
         }
     }
-
-    static var counter: ChangeCounter?
 
     @MainActor
     static func mainWindow() -> NSWindow? {
@@ -192,13 +173,4 @@ struct WindowConfigurator: NSViewRepresentable {
         do { try data.write(to: url); AppDelegate.log("snapshot \(url.path) \(data.count) bytes") }
         catch { AppDelegate.log("snapshot write failed: \(error.localizedDescription)") }
     }
-}
-
-/// Counts change notifications (screenshot diagnostics only).
-final class ChangeCounter: @unchecked Sendable {
-    private let lock = NSLock()
-    private var count = 0
-    var cancellables: [AnyCancellable] = []
-    func increment() { lock.lock(); count += 1; lock.unlock() }
-    func take() -> Int { lock.lock(); defer { count = 0; lock.unlock() }; return count }
 }

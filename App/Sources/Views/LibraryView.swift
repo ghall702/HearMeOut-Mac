@@ -61,6 +61,14 @@ struct LibraryView: View {
         HStack(alignment: .bottom) {
             SectionTitle(title: "Library", subtitle: count == 0 ? nil : "\(count) recording\(count == 1 ? "" : "s") in \(model.activeAccount?.title ?? "this account")")
             Spacer()
+            Menu {
+                Picker("Sort", selection: $sort) { ForEach(LibrarySort.allCases) { Text($0.label).tag($0) } }.pickerStyle(.inline)
+            } label: {
+                Label(sort.label, systemImage: "arrow.up.arrow.down").font(.system(size: 12.5, weight: .semibold, design: .rounded))
+            }
+            .menuStyle(.borderlessButton)
+            .fixedSize()
+            .padding(.trailing, 6)
             if let accountId {
                 Button { model.refreshLibrary(accountId, quiet: false) } label: {
                     if model.libraryLoading.contains(accountId) { ProgressView().controlSize(.small) } else { Label("Refresh", systemImage: "arrow.clockwise") }
@@ -72,6 +80,20 @@ struct LibraryView: View {
     }
 
     private var controls: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 10) { searchField; chips }
+            VStack(alignment: .leading, spacing: 10) { searchField; chips }
+        }
+    }
+
+    private var chips: some View {
+        HStack(spacing: 6) {
+            ForEach(LibraryFilter.allCases) { f in Chip(title: f.label, selected: filter == f) { filter = f } }
+        }
+        .fixedSize()
+    }
+
+    private var searchField: some View {
         HStack(spacing: 10) {
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass").foregroundStyle(theme.palette.secondaryText)
@@ -83,19 +105,7 @@ struct LibraryView: View {
             .padding(.horizontal, 12).padding(.vertical, 8)
             .background(Capsule().fill(theme.palette.surface))
             .overlay(Capsule().strokeBorder(theme.palette.stroke))
-            .frame(maxWidth: 320)
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 6) {
-                    ForEach(LibraryFilter.allCases) { f in Chip(title: f.label, selected: filter == f) { filter = f } }
-                }
-            }
-            Menu {
-                Picker("Sort", selection: $sort) { ForEach(LibrarySort.allCases) { Text($0.label).tag($0) } }.pickerStyle(.inline)
-            } label: {
-                Label(sort.label, systemImage: "arrow.up.arrow.down").font(.system(size: 12.5, weight: .semibold, design: .rounded))
-            }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
+            .frame(minWidth: 220, maxWidth: 320)
         }
     }
 }
@@ -131,7 +141,7 @@ struct LibraryRow: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
                         .fill(LinearGradient(colors: theme.palette.wave.map { $0.opacity(0.85) }, startPoint: .topLeading, endPoint: .bottomTrailing))
-                    Image(systemName: entry.isProcessing ? "waveform.badge.ellipsis" : "waveform")
+                    Image(systemName: "waveform")
                         .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
                 }
                 .frame(width: 46, height: 46)
@@ -229,8 +239,8 @@ struct RecordingDetail: View {
                             HStack { ProgressView().controlSize(.small); Text("Preparing audio…").font(.system(size: 12)) }
                         } else if audioUnavailable {
                             VStack(alignment: .leading, spacing: 6) {
-                                Text("Audio isn't stored on this Mac.").font(.system(size: 12.5, weight: .semibold))
-                                Text("Listen on the web, or ask for the Mac playback endpoint to be enabled (see the backend notes).")
+                                Text("This recording's audio isn't on this Mac.").font(.system(size: 12.5, weight: .semibold))
+                                Text("You can listen to it in your browser.")
                                     .font(.system(size: 11.5)).foregroundStyle(theme.palette.secondaryText)
                                 if let s = entry.shareUrl, let u = URL(string: s) {
                                     Button { NSWorkspace.shared.open(u) } label: { Label("Listen in browser", systemImage: "safari") }.buttonStyle(.pill(.secondary))
@@ -278,7 +288,7 @@ struct RecordingDetail: View {
         }
         .scrollIndicators(.never)
         .background(
-            Rectangle().fill(.ultraThinMaterial).overlay(Rectangle().fill(theme.palette.surface)).ignoresSafeArea()
+            Rectangle().fill(theme.cardBase).overlay(Rectangle().fill(theme.palette.surface)).ignoresSafeArea()
                 .overlay(alignment: .leading) { Rectangle().fill(theme.palette.stroke).frame(width: 1) }
         )
         .onAppear {
@@ -366,12 +376,12 @@ struct SharePanel: View {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
                 ForEach(ShareFormat.allCases.filter { $0 != preferred }) { f in
                     Button { model.copy(f, links: links) } label: {
-                        Label(f.action, systemImage: f.symbol).frame(maxWidth: .infinity)
+                        Label(f.shortAction, systemImage: f.symbol).lineLimit(1).frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.pill(.secondary))
                 }
                 Button { if let u = URL(string: links.shareUrl) { NSWorkspace.shared.open(u) } } label: {
-                    Label("Open in Browser", systemImage: "safari").frame(maxWidth: .infinity)
+                    Label("Open", systemImage: "safari").lineLimit(1).frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.pill(.secondary))
             }

@@ -200,6 +200,11 @@ struct ResolvedTheme {
     var background: LinearGradient {
         LinearGradient(colors: [palette.backgroundTop, palette.backgroundBottom], startPoint: .top, endPoint: .bottom)
     }
+    /// Opaque-ish themed base for cards (instead of system blur, which can render as flat grey).
+    var cardBase: Color {
+        scheme == .dark ? palette.backgroundBottom.opacity(0.78) : palette.backgroundTop.opacity(0.55)
+    }
+
     var waveGradient: LinearGradient {
         LinearGradient(colors: palette.wave, startPoint: .leading, endPoint: .trailing)
     }

@@ -16,7 +16,7 @@ struct GlassCard<Content: View>: View {
             .padding(padding)
             .background {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .fill(.ultraThinMaterial)
+                    .fill(theme.cardBase)
                     .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).fill(strong ? theme.palette.surfaceStrong : theme.palette.surface))
                     .overlay(RoundedRectangle(cornerRadius: radius, style: .continuous).strokeBorder(theme.palette.stroke, lineWidth: 1))
                     .shadow(color: .black.opacity(theme.scheme == .dark ? 0.35 : 0.06), radius: 18, y: 8)
@@ -322,5 +322,17 @@ struct OptionCard: View {
         .buttonStyle(.plain)
         .onHover { hovering = $0 }
         .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+extension ShareFormat {
+    /// Compact labels for the secondary share buttons.
+    var shortAction: String {
+        switch self {
+        case .link: return "Link"
+        case .gmail: return "Gmail card"
+        case .embed: return "Embed code"
+        case .message: return "Message"
+        }
     }
 }
