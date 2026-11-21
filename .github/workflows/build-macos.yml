@@ -96,7 +96,7 @@ jobs:
               sips -Z 1400 -s format jpeg -s formatOptions 80 "$SNAPDIR/$NAME.png" --out "docs/screenshots/$NAME.jpg" > /dev/null
               echo "Captured $NAME"
             else
-              echo "No screenshot for $NAME"; tail -5 "snap-$NAME.log"
+              echo "No screenshot for $NAME"; grep HMO "snap-$NAME.log" | head -5; tail -3 "snap-$NAME.log"; ls "$SNAPDIR" 2>&1 | head -3
             fi
           done
           ls -la docs/screenshots

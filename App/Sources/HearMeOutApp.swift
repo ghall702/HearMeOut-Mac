@@ -77,9 +77,40 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @MainActor static var model: AppModel?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if ProcessInfo.processInfo.environment["HMO_DEMO"] != nil {
-            NSApp.activate(ignoringOtherApps: true)
+        let env = ProcessInfo.processInfo.environment
+        guard env["HMO_DEMO"] != nil else { return }
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
+        guard let name = env["HMO_SNAPSHOT_NAME"] else { return }
+        // Screenshot mode: find the main window, size it, render it to PNG, quit.
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            Self.log("windows: \(NSApp.windows.map { "\($0.className) visible=\($0.isVisible) frame=\($0.frame)" })")
+            if Self.mainWindow() == nil { AppDelegate.model?.openMainWindow?() }
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            if let w = Self.mainWindow() {
+                w.setContentSize(NSSize(width: 1180, height: 800))
+                w.center()
+                w.makeKeyAndOrderFront(nil)
+            }
+            try? await Task.sleep(nanoseconds: 4_000_000_000)
+            if let w = Self.mainWindow() {
+                WindowConfigurator.snapshot(w, name: name)
+            } else {
+                Self.log("no main window found")
+            }
+            exit(0)
         }
+    }
+
+    @MainActor
+    static func mainWindow() -> NSWindow? {
+        NSApp.windows.filter { $0.contentView != nil && $0.frame.width > 500 && !$0.className.contains("StatusBar") }
+            .max { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height }
+    }
+
+    static func log(_ s: String) {
+        FileHandle.standardError.write(Data("HMO: \(s)\n".utf8))
     }
 
     /// Opening audio files from Finder ("Open With → Hear Me Out" or dropping on the Dock icon).
@@ -123,14 +154,6 @@ struct WindowConfigurator: NSViewRepresentable {
             w.isMovableByWindowBackground = true
             w.titlebarAppearsTransparent = true
             w.minSize = NSSize(width: 860, height: 600)
-            let env = ProcessInfo.processInfo.environment
-            guard env["HMO_DEMO"] != nil, let name = env["HMO_SNAPSHOT_NAME"] else { return }
-            w.setContentSize(NSSize(width: 1180, height: 800))
-            w.center()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
-                WindowConfigurator.snapshot(w, name: name)
-                NSApp.terminate(nil)
-            }
         }
         return v
     }
@@ -139,11 +162,11 @@ struct WindowConfigurator: NSViewRepresentable {
 
     static func snapshot(_ window: NSWindow, name: String) {
         guard let view = window.contentView?.superview ?? window.contentView,
-              let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+              let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { AppDelegate.log("no view to snapshot"); return }
         view.cacheDisplay(in: view.bounds, to: rep)
         guard let data = rep.representation(using: .png, properties: [:]) else { return }
         let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("\(name).png")
-        try? data.write(to: url)
-        print("SNAPSHOT \(url.path)")
+        do { try data.write(to: url); AppDelegate.log("snapshot \(url.path) \(data.count) bytes") }
+        catch { AppDelegate.log("snapshot write failed: \(error.localizedDescription)") }
     }
 }
