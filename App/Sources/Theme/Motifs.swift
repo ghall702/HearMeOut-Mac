@@ -295,8 +295,10 @@ private struct MotifPainter {
 
     private func flower(at p: CGPoint, radius r: CGFloat, color: Color, centre: Color) {
         for k in 0..<5 {
-            let a = Double(k) * 2 * .pi / 5
-            let c = CGPoint(x: p.x + cos(a) * r * 0.55, y: p.y + sin(a) * r * 0.55)
+            let a: CGFloat = CGFloat(k) * 2 * .pi / 5
+            let dx: CGFloat = cos(a) * r * 0.55
+            let dy: CGFloat = sin(a) * r * 0.55
+            let c = CGPoint(x: p.x + dx, y: p.y + dy)
             ctx.fill(Path(ellipseIn: CGRect(x: c.x - r * 0.48, y: c.y - r * 0.48, width: r * 0.96, height: r * 0.96)), with: .color(color))
         }
         ctx.fill(Path(ellipseIn: CGRect(x: p.x - r * 0.18, y: p.y - r * 0.18, width: r * 0.36, height: r * 0.36)), with: .color(centre))

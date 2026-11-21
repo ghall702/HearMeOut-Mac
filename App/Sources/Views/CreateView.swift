@@ -233,36 +233,17 @@ struct RecordOrb: View {
     @State private var breathe = false
     @State private var hovering = false
 
+    private var isRecording: Bool { state == .recording }
+    private var isPaused: Bool { state == .paused }
+    private var baseColour: Color {
+        (isRecording || isPaused || state == .starting) ? theme.palette.record : theme.palette.accent
+    }
+
     var body: some View {
-        let p = theme.palette
-        let recording = state == .recording
-        let paused = state == .paused
-        let base = recording || paused || state == .starting ? p.record : p.accent
-        let level = CGFloat(recording ? meter.level : 0)
         ZStack {
-            // Voice rings
-            ForEach(0..<3) { i in
-                Circle()
-                    .fill(base.opacity(recording ? 0.16 - Double(i) * 0.04 : 0.08 - Double(i) * 0.02))
-                    .frame(width: size, height: size)
-                    .scaleEffect(1 + CGFloat(i + 1) * (recording ? 0.14 + level * 0.22 : (breathe ? 0.09 : 0.05)))
-            }
-            Circle()
-                .fill(RadialGradient(colors: [base.opacity(0.95), base], center: UnitPoint(x: 0.35, y: 0.3), startRadius: 4, endRadius: size * 0.7))
-                .overlay(Circle().strokeBorder(Color.white.opacity(0.28), lineWidth: 1.5))
-                .shadow(color: base.opacity(0.45), radius: hovering ? 28 : 20, y: 10)
-                .frame(width: size, height: size)
-                .scaleEffect(hovering && !recording ? 1.03 : 1)
-            Group {
-                if state == .starting {
-                    ProgressView().controlSize(.large).tint(.white)
-                } else {
-                    Image(systemName: recording ? "stop.fill" : paused ? "pause.fill" : "mic.fill")
-                        .font(.system(size: size * (recording ? 0.24 : 0.3), weight: .semibold))
-                        .foregroundStyle(.white)
-                        .contentTransition(.symbolEffect(.replace))
-                }
-            }
+            OrbRings(colour: baseColour, size: size, recording: isRecording, level: CGFloat(isRecording ? meter.level : 0), breathe: breathe)
+            orb
+            orbIcon
         }
         .frame(width: size * 1.7, height: size * 1.7)
         .contentShape(Circle())
@@ -279,8 +260,61 @@ struct RecordOrb: View {
         )
         .accessibilityElement()
         .accessibilityAddTraits(.isButton)
-        .accessibilityLabel(recording ? "Stop recording" : paused ? "Stop recording (paused)" : "Start recording")
+        .accessibilityLabel(isRecording ? "Stop recording" : isPaused ? "Stop recording (paused)" : "Start recording")
         .accessibilityAction(action)
+    }
+
+    private var orb: some View {
+        let gradient = RadialGradient(colors: [baseColour.opacity(0.95), baseColour], center: UnitPoint(x: 0.35, y: 0.3),
+                                      startRadius: 4, endRadius: size * 0.7)
+        return Circle()
+            .fill(gradient)
+            .overlay(Circle().strokeBorder(Color.white.opacity(0.28), lineWidth: 1.5))
+            .shadow(color: baseColour.opacity(0.45), radius: hovering ? 28 : 20, y: 10)
+            .frame(width: size, height: size)
+            .scaleEffect(hovering && !isRecording ? 1.03 : 1)
+    }
+
+    @ViewBuilder private var orbIcon: some View {
+        if state == .starting {
+            ProgressView().controlSize(.large).tint(.white)
+        } else {
+            let symbol = isRecording ? "stop.fill" : isPaused ? "pause.fill" : "mic.fill"
+            let iconSize: CGFloat = size * (isRecording ? 0.24 : 0.3)
+            Image(systemName: symbol)
+                .font(.system(size: iconSize, weight: .semibold))
+                .foregroundStyle(.white)
+                .contentTransition(.symbolEffect(.replace))
+        }
+    }
+}
+
+/// The soft rings around the record button: breathing when idle, following your voice while recording.
+struct OrbRings: View {
+    let colour: Color
+    let size: CGFloat
+    let recording: Bool
+    let level: CGFloat
+    let breathe: Bool
+
+    private func scale(_ i: Int) -> CGFloat {
+        let step: CGFloat = recording ? 0.14 + level * 0.22 : (breathe ? 0.09 : 0.05)
+        return 1 + CGFloat(i + 1) * step
+    }
+
+    private func opacity(_ i: Int) -> Double {
+        recording ? 0.16 - Double(i) * 0.04 : 0.08 - Double(i) * 0.02
+    }
+
+    var body: some View {
+        ZStack {
+            ForEach(0..<3, id: \.self) { i in
+                Circle()
+                    .fill(colour.opacity(opacity(i)))
+                    .frame(width: size, height: size)
+                    .scaleEffect(scale(i))
+            }
+        }
     }
 }
 

@@ -297,7 +297,12 @@ extension RecordingController {
         self.accountId = accountId
         state = .recording
         meter.elapsed = 83
-        meter.history = (0..<meter.history.count).map { i in Float(0.25 + 0.6 * abs(sin(Double(i) * 0.37)) * (0.6 + 0.4 * cos(Double(i) * 0.11))) }
+        meter.history = (0..<meter.history.count).map { (i: Int) -> Float in
+            let x = Double(i)
+            let wave: Double = abs(sin(x * 0.37))
+            let envelope: Double = 0.6 + 0.4 * cos(x * 0.11)
+            return Float(0.25 + 0.6 * wave * envelope)
+        }
         meter.level = 0.55
     }
 }
