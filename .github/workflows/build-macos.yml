@@ -83,30 +83,20 @@ jobs:
         if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[shots]')
         run: |
           APP="build/Build/Products/Release/Hear Me Out.app"
-          FRAME="$HOME/Library/Containers/uk.george-hall.hearmeout/Data/tmp/frame.json"
-          mkdir -p docs/screenshots shots
-          for SPEC in create:botanical:light recording:botanical:light library:botanical:light activity:coastal:light settings:lavender:light themes:botanical:light onboarding:sunset:light accounts:botanical:light create:midnight:dark recording:aurora:dark library:ocean:dark create:espresso:dark create:cherry:light create:desert:light themes:forest:dark create:alpine:light; do
+          SNAPDIR="$HOME/Library/Containers/uk.george-hall.hearmeout/Data/tmp"
+          mkdir -p docs/screenshots
+          for SPEC in create:botanical:light recording:botanical:light library:botanical:light activity:coastal:light settings:lavender:light themes:botanical:light onboarding:sunset:light create:midnight:dark recording:aurora:dark library:ocean:dark create:espresso:dark create:cherry:light create:desert:light themes:forest:dark create:alpine:light activity:rosewater:light; do
             IFS=: read MODE THEME LOOK <<< "$SPEC"
             NAME="$MODE-$THEME-$LOOK"
-            rm -f "$FRAME"
-            HMO_DEMO=$MODE HMO_THEME=$THEME HMO_APPEARANCE=$LOOK HMO_WINDOW_FRAME_FILE="$FRAME" "$APP/Contents/MacOS/HearMeOut" > /dev/null 2>&1 &
+            HMO_DEMO=$MODE HMO_THEME=$THEME HMO_APPEARANCE=$LOOK HMO_SNAPSHOT_NAME="$NAME" "$APP/Contents/MacOS/HearMeOut" > "snap-$NAME.log" 2>&1 &
             PID=$!
-            sleep 9
-            screencapture -x "shots/$NAME-full.png" || true
+            for i in $(seq 1 25); do kill -0 $PID 2>/dev/null || break; sleep 1; done
             kill $PID 2>/dev/null || true
-            sleep 1
-            if [ -f "shots/$NAME-full.png" ] && [ -f "$FRAME" ]; then
-              read H W Y X < <(python3 -c "
-          import json,subprocess,sys
-          f=json.load(open('$FRAME'))
-          out=subprocess.run(['sips','-g','pixelWidth','shots/$NAME-full.png'],capture_output=True,text=True).stdout
-          s=int(out.split()[-1])/f['sw']
-          print(int(f['h']*s),int(f['w']*s),int(f['y']*s),int(f['x']*s))")
-              sips -c "$H" "$W" --cropOffset "$Y" "$X" "shots/$NAME-full.png" --out "shots/$NAME.png" > /dev/null
-              sips -Z 1400 -s format jpeg -s formatOptions 80 "shots/$NAME.png" --out "docs/screenshots/$NAME.jpg" > /dev/null
+            if [ -f "$SNAPDIR/$NAME.png" ]; then
+              sips -Z 1400 -s format jpeg -s formatOptions 80 "$SNAPDIR/$NAME.png" --out "docs/screenshots/$NAME.jpg" > /dev/null
               echo "Captured $NAME"
             else
-              echo "No screenshot for $NAME"
+              echo "No screenshot for $NAME"; tail -5 "snap-$NAME.log"
             fi
           done
           ls -la docs/screenshots

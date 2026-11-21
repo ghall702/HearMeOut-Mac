@@ -113,29 +113,37 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// Makes the window draggable by its background and records its frame for the screenshot workflow.
+/// Makes the window draggable by its background. In demo mode it can also snapshot its own window
+/// (HMO_SNAPSHOT_NAME) for the CI screenshot review — no screen-recording permission needed.
 struct WindowConfigurator: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
         let v = NSView()
-        DispatchQueue.main.async {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
             guard let w = v.window else { return }
             w.isMovableByWindowBackground = true
             w.titlebarAppearsTransparent = true
             w.minSize = NSSize(width: 860, height: 600)
-            if let path = ProcessInfo.processInfo.environment["HMO_WINDOW_FRAME_FILE"] {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    let f = w.frame
-                    let screen = w.screen ?? NSScreen.main
-                    let sh = screen?.frame.height ?? 0
-                    let sw = screen?.frame.width ?? 0
-                    // Top-left origin for cropping a full-screen capture.
-                    let json = "{\"x\":\(f.origin.x),\"y\":\(sh - f.origin.y - f.height),\"w\":\(f.width),\"h\":\(f.height),\"sw\":\(sw)}"
-                    try? json.write(toFile: path, atomically: true, encoding: .utf8)
-                }
+            let env = ProcessInfo.processInfo.environment
+            guard env["HMO_DEMO"] != nil, let name = env["HMO_SNAPSHOT_NAME"] else { return }
+            w.setContentSize(NSSize(width: 1180, height: 800))
+            w.center()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 4) {
+                WindowConfigurator.snapshot(w, name: name)
+                NSApp.terminate(nil)
             }
         }
         return v
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {}
+
+    static func snapshot(_ window: NSWindow, name: String) {
+        guard let view = window.contentView?.superview ?? window.contentView,
+              let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds) else { return }
+        view.cacheDisplay(in: view.bounds, to: rep)
+        guard let data = rep.representation(using: .png, properties: [:]) else { return }
+        let url = URL(fileURLWithPath: NSTemporaryDirectory()).appendingPathComponent("\(name).png")
+        try? data.write(to: url)
+        print("SNAPSHOT \(url.path)")
+    }
 }
