@@ -1,0 +1,146 @@
+name: Build macOS app
+
+on:
+  push:
+    branches: ["main", "claude/**"]
+    paths-ignore: ["**.md", "docs/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 80
+    env:
+      DMG_NAME: Hear-Me-Out-1.0.0-build${{ github.run_number }}.dmg
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          scripts/select-xcode.sh
+          swift --version
+          sw_vers
+
+      - name: Core unit tests
+        working-directory: Packages/HearMeOutCore
+        run: |
+          if ! swift test > "$GITHUB_WORKSPACE/core-tests.log" 2>&1; then
+            grep -E "error|failed|XCTAssert" "$GITHUB_WORKSPACE/core-tests.log" | head -150
+            tail -60 "$GITHUB_WORKSPACE/core-tests.log"
+            exit 1
+          fi
+          grep -E "Executed [0-9]+ tests|Test run with" "$GITHUB_WORKSPACE/core-tests.log" | tail -5
+
+      - name: Generate Xcode project
+        run: |
+          brew install xcodegen
+          sed -i '' "s/CURRENT_PROJECT_VERSION: \"1\"/CURRENT_PROJECT_VERSION: \"${{ github.run_number }}\"/" project.yml
+          xcodegen generate
+
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: .spm
+          key: spm-${{ hashFiles('project.yml') }}
+
+      - name: Build app (Apple Silicon, Release)
+        run: |
+          xcodebuild -project HearMeOut.xcodeproj -scheme HearMeOut -configuration Release \
+            -destination 'platform=macOS,arch=arm64' -derivedDataPath build -clonedSourcePackagesDirPath .spm \
+            -skipPackagePluginValidation -skipMacroValidation \
+            CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO \
+            build > build.log 2>&1 || { grep -E "error:" build.log | sort -u | head -200; tail -40 build.log; exit 1; }
+          grep -E "BUILD SUCCEEDED" build.log
+          echo "Warnings: $(grep -c 'warning:' build.log || true)"
+          grep -E "HearMeOut/App/.*warning:" build.log | sort -u | head -60 || true
+          test -d "build/Build/Products/Release/Hear Me Out.app"
+
+      - name: Verify bundle and signature
+        run: |
+          APP="build/Build/Products/Release/Hear Me Out.app"
+          lipo -info "$APP/Contents/MacOS/HearMeOut"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          codesign -d --entitlements - "$APP"
+          du -sh "$APP"
+          otool -L "$APP/Contents/MacOS/HearMeOut" | grep -i foundationmodels || echo "FoundationModels not linked (older SDK)"
+
+      - name: Launch smoke test (demo data, no real accounts)
+        run: |
+          APP="build/Build/Products/Release/Hear Me Out.app"
+          HMO_DEMO=create "$APP/Contents/MacOS/HearMeOut" > launch.log 2>&1 &
+          PID=$!
+          sleep 20
+          if kill -0 $PID 2>/dev/null; then echo "Still running after 20 s — launch OK"; kill $PID; else echo "App exited early"; cat launch.log; exit 1; fi
+
+      - name: Screenshots
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[shots]')
+        run: |
+          APP="build/Build/Products/Release/Hear Me Out.app"
+          FRAME="$HOME/Library/Containers/uk.george-hall.hearmeout/Data/tmp/frame.json"
+          mkdir -p docs/screenshots shots
+          for SPEC in create:botanical:light recording:botanical:light library:botanical:light activity:coastal:light settings:lavender:light themes:botanical:light onboarding:sunset:light accounts:botanical:light create:midnight:dark recording:aurora:dark library:ocean:dark create:espresso:dark create:cherry:light create:desert:light themes:forest:dark create:alpine:light; do
+            IFS=: read MODE THEME LOOK <<< "$SPEC"
+            NAME="$MODE-$THEME-$LOOK"
+            rm -f "$FRAME"
+            HMO_DEMO=$MODE HMO_THEME=$THEME HMO_APPEARANCE=$LOOK HMO_WINDOW_FRAME_FILE="$FRAME" "$APP/Contents/MacOS/HearMeOut" > /dev/null 2>&1 &
+            PID=$!
+            sleep 9
+            screencapture -x "shots/$NAME-full.png" || true
+            kill $PID 2>/dev/null || true
+            sleep 1
+            if [ -f "shots/$NAME-full.png" ] && [ -f "$FRAME" ]; then
+              read H W Y X < <(python3 -c "
+          import json,subprocess,sys
+          f=json.load(open('$FRAME'))
+          out=subprocess.run(['sips','-g','pixelWidth','shots/$NAME-full.png'],capture_output=True,text=True).stdout
+          s=int(out.split()[-1])/f['sw']
+          print(int(f['h']*s),int(f['w']*s),int(f['y']*s),int(f['x']*s))")
+              sips -c "$H" "$W" --cropOffset "$Y" "$X" "shots/$NAME-full.png" --out "shots/$NAME.png" > /dev/null
+              sips -Z 1400 -s format jpeg -s formatOptions 80 "shots/$NAME.png" --out "docs/screenshots/$NAME.jpg" > /dev/null
+              echo "Captured $NAME"
+            else
+              echo "No screenshot for $NAME"
+            fi
+          done
+          ls -la docs/screenshots
+
+      - name: Commit screenshots
+        if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[shots]')
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/screenshots
+          git commit -m "Update screenshots from CI build ${{ github.run_number }} [skip ci]" || exit 0
+          git push origin HEAD:${{ github.ref_name }}
+
+      - name: Create DMG
+        run: |
+          scripts/make-dmg.sh "build/Build/Products/Release/Hear Me Out.app" "$DMG_NAME"
+          shasum -a 256 "$DMG_NAME" | tee "$DMG_NAME.sha256"
+
+      - name: Upload DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Hear-Me-Out-DMG
+          path: |
+            ${{ env.DMG_NAME }}
+            ${{ env.DMG_NAME }}.sha256
+          if-no-files-found: error
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            core-tests.log
+            build.log
+            launch.log
+          if-no-files-found: ignore

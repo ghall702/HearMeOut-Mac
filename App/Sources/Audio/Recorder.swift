@@ -291,6 +291,17 @@ final class RecordingController: NSObject, ObservableObject {
     }
 }
 
+extension RecordingController {
+    /// Screenshot/UI-test mode only: shows the recording state with synthetic levels, no microphone used.
+    func demoSimulateRecording(accountId: String) {
+        self.accountId = accountId
+        state = .recording
+        meter.elapsed = 83
+        meter.history = (0..<meter.history.count).map { i in Float(0.25 + 0.6 * abs(sin(Double(i) * 0.37)) * (0.6 + 0.4 * cos(Double(i) * 0.11))) }
+        meter.level = 0.55
+    }
+}
+
 extension RecordingController: AVCaptureFileOutputRecordingDelegate {
     nonisolated func fileOutput(_ output: AVCaptureFileOutput, didFinishRecordingTo outputFileURL: URL, from connections: [AVCaptureConnection], error: Error?) {
         Task { @MainActor in self.finish(url: outputFileURL, error: error) }
