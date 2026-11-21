@@ -91,12 +91,16 @@ jobs:
             HMO_DEMO=$MODE HMO_THEME=$THEME HMO_APPEARANCE=$LOOK HMO_SNAPSHOT_NAME="$NAME" "$APP/Contents/MacOS/HearMeOut" > "snap-$NAME.log" 2>&1 &
             PID=$!
             for i in $(seq 1 25); do kill -0 $PID 2>/dev/null || break; sleep 1; done
+            if kill -0 $PID 2>/dev/null && [ "$MODE" = "create" ] && [ "$THEME" = "botanical" ]; then
+              echo "---- still running after 25 s: main thread sample ----"
+              sample $PID 2 -mayDie 2>/dev/null | grep -A60 "Thread_.*main-thread\|com.apple.main-thread" | head -70 || true
+            fi
             kill $PID 2>/dev/null || true
             if [ -f "$SNAPDIR/$NAME.png" ]; then
               sips -Z 1400 -s format jpeg -s formatOptions 80 "$SNAPDIR/$NAME.png" --out "docs/screenshots/$NAME.jpg" > /dev/null
               echo "Captured $NAME"
             else
-              echo "No screenshot for $NAME"; grep HMO "snap-$NAME.log" | head -5; tail -3 "snap-$NAME.log"; ls "$SNAPDIR" 2>&1 | head -3
+              echo "No screenshot for $NAME"; grep HMO "snap-$NAME.log" | head -8; tail -3 "snap-$NAME.log"
             fi
           done
           ls -la docs/screenshots

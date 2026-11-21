@@ -9,7 +9,9 @@ struct HearMeOutApp: App {
 
     init() {
         let demo = ProcessInfo.processInfo.environment["HMO_DEMO"].flatMap(DemoScenario.init(rawValue:))
+        if demo != nil { AppDelegate.log("app init start") }
         let m = AppModel(demo: demo)
+        if demo != nil { AppDelegate.log("model ready") }
         if let look = ProcessInfo.processInfo.environment["HMO_APPEARANCE"] {
             m.settings.appearance = look == "dark" ? .dark : look == "light" ? .light : .themeDefault
         }
@@ -79,6 +81,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         let env = ProcessInfo.processInfo.environment
         guard env["HMO_DEMO"] != nil else { return }
+        Self.log("did finish launching")
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         guard let name = env["HMO_SNAPSHOT_NAME"] else { return }
