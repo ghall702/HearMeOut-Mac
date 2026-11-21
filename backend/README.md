@@ -1,5 +1,11 @@
 # Backend additions for the Mac app
 
+> **Status: deployed to hearmeout.george-hall.uk (21 Nov 2026).** Added as written, plus the sign-in page
+> change that returns Mac sign-ins to `/native/connect`. One difference: `src/lib/playback.server.ts` was
+> **not** used. The playback route builds its link with the website's existing view-link code, so links are
+> identical to the web app's. Server tests: 30 passing. Smoke-checked: connect page loads, `native/config`
+> reports enabled, bad codes and keyless requests are rejected. Not yet exercised: a full sign-in from the app.
+
 The Mac app works with today's Hear Me Out API. Three small, **additive** endpoints make it better.
 Nothing existing is changed: the web app, the Chrome extension, `apikeys.server.ts`, uploads,
 `finalize` and `recordings` behave exactly as before. No new tables, no migrations.

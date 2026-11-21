@@ -23,6 +23,15 @@ Status key: ✅ automated and passing in CI · 🖥️ needs a real Mac with mic
 * Screenshots of every main screen in 16 theme/appearance combinations 👀 (commit with `[shots]`) — all 16 captured and reviewed (build 12); two design passes applied from them
 * An idle-redraw loop (≈100 state changes/second, caused by the menu bar binding) was found by these screenshot runs and fixed
 
+## First real sign-in (backend now deployed) 🖥️
+1. Settings → Accounts → **Sign in with Google**. A browser sheet opens `/native/connect`; pick the account, press
+   **Connect this Mac**. Expect: the sheet closes, the account appears with your Google name, email and picture.
+2. In the web app, Settings → API keys should list **Mac app · <Mac name> · <date>**.
+3. Add the second and third accounts the same way ("Use a different account" on the connect page).
+4. Library → select a recording whose local copy isn't on this Mac → it should play (15-minute link).
+5. Remove one account in the Mac app → its key should show as revoked in Settings → API keys.
+If step 1 fails, note the message shown in the app (it distinguishes cancelled / not authorised / expired code).
+
 ## Manual checks on your Macs 🖥️
 1. Connect three accounts (Google once the backend is deployed; API key before). Switch repeatedly; check avatar,
    email, theme and library change together and the destination chip is always right.

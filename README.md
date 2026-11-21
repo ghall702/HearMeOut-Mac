@@ -59,10 +59,10 @@ attached, the date-based name stays, and Activity offers **Retry title**; nothin
 
 ### Backend additions
 
-Everything above works with today's API. Three small, additive endpoints unlock Google sign-in from the Mac,
-real profiles for API-key connections, and library playback after the local copy is cleared. See
-[backend/README.md](backend/README.md) (with a ready-to-paste [Lovable prompt](backend/LOVABLE-PROMPT.md)).
-Until they're deployed the app detects their absence and offers **Connect with an API key** instead.
+Three small, additive endpoints add Google sign-in from the Mac, real profiles for API-key connections, and
+library playback after the local copy is cleared. They are **deployed** (21 Nov 2026) — see
+[backend/README.md](backend/README.md). The app still checks for them at runtime and falls back to
+**Connect with an API key** if a server doesn't have them.
 
 ## Reusing Let's Meet's Whisper model
 

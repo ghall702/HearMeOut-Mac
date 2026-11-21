@@ -17,7 +17,7 @@ Adds to the handbook dated 21 Nov 2026. Everything here is additive; existing cl
 * **`recordedAt`:** captured when recording starts (or from trustworthy file metadata on import), sent as UTC
   `yyyy-MM-ddTHH:mm:ssZ` on both `/uploads` and the first `finalize`.
 
-## 13. New endpoints (see backend/README.md)
+## 13. New endpoints (deployed 21 Nov 2026; see backend/README.md)
 
 ### `GET /api/public/v1/native/config`
 `{ "enabled": true, "redirectUris": ["hearmeout://auth/callback"], "pkce": ["S256"] }`. Clients use a 404 to
@@ -37,7 +37,8 @@ Body `{ "grant_type":"authorization_code", "code":"…", "code_verifier":"…", 
 Bearer key → `{ user:{id,email,name,avatar_url}, features:["native-auth","playback"] }`.
 
 ### `GET /api/public/v1/recordings/:id/playback`
-Bearer key, owner only → `{ url, exp }`: a 15-minute media-server `view` URL (Range supported). 404 if not yours,
+Bearer key, owner only → `{ url, exp }`: a 15-minute media-server `view` URL (Range supported), built by the
+same code the website uses for its own player. 404 if not yours,
 409 `not_ready` if the recording isn't finalised.
 
 Revoking a Mac key: `POST /api/public/v1/extension/signout` (already revokes whichever key it is called with).
