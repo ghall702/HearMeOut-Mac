@@ -25,13 +25,13 @@ public enum TitleSanitiser {
         s = s.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression).trimmed
         guard !s.isEmpty else { return nil }
         if generic.contains(s.lowercased()) { return nil }
+        // A "title" that's really a paragraph.
+        if s.split(separator: " ").count > 14 { return nil }
         if s.count > maxLength {
             let cut = s.prefix(maxLength)
             if let space = cut.lastIndex(of: " ") { s = String(cut[..<space]) } else { s = String(cut) }
             s = s.trimmingCharacters(in: CharacterSet(charactersIn: ",;:-–— "))
         }
-        // A "title" that's really a paragraph.
-        if s.split(separator: " ").count > 14 { return nil }
         return s
     }
 

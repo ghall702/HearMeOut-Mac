@@ -196,7 +196,7 @@ public enum Pipeline {
 
 extension QueueItem {
     /// Finished, but the transcript failed: keep the explanation visible.
-    var transcriptFailedOnly: Bool { transcriptStage == .failed }
+    var transcriptFailedOnly: Bool { transcriptStage == .failed || titleStage == .failed || syncStage == .failed }
 }
 
 extension Pipeline {

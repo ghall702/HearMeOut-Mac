@@ -12,6 +12,7 @@ final class UploadManager: NSObject, URLSessionTaskDelegate, URLSessionDataDeleg
     private var waiters: [String: CheckedContinuation<Void, Error>] = [:]
     private var progress: [String: @Sendable (Double) -> Void] = [:]
     private var finished: [String: Result<Void, Error>] = [:]
+    private var lastReported: [String: Double] = [:]
 
     private lazy var session: URLSession = {
         let c = URLSessionConfiguration.background(withIdentifier: Self.identifier)
@@ -68,8 +69,15 @@ final class UploadManager: NSObject, URLSessionTaskDelegate, URLSessionDataDeleg
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didSendBodyData bytesSent: Int64, totalBytesSent: Int64, totalBytesExpectedToSend: Int64) {
         guard let key = task.taskDescription, totalBytesExpectedToSend > 0 else { return }
-        lock.lock(); let cb = progress[key]; lock.unlock()
-        cb?(Double(totalBytesSent) / Double(totalBytesExpectedToSend))
+        let fraction = Double(totalBytesSent) / Double(totalBytesExpectedToSend)
+        lock.lock()
+        let cb = progress[key]
+        // Report at most every 1% so the interface isn't flooded with updates.
+        let last = lastReported[key] ?? -1
+        let report = fraction - last >= 0.01 || fraction >= 1
+        if report { lastReported[key] = fraction }
+        lock.unlock()
+        if report { cb?(fraction) }
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
@@ -89,6 +97,7 @@ final class UploadManager: NSObject, URLSessionTaskDelegate, URLSessionDataDeleg
         }
         lock.lock()
         progress[key] = nil
+        lastReported[key] = nil
         if let w = waiters.removeValue(forKey: key) {
             lock.unlock()
             w.resume(with: result)
