@@ -104,6 +104,15 @@ struct Toast: Identifiable, Equatable {
 
 @MainActor
 final class AppModel: ObservableObject {
+    /// SwiftUI may initialise the App struct more than once; the model (and its queue) must exist only once.
+    static var instance: AppModel?
+    static func shared(demo: DemoScenario?) -> AppModel {
+        if let m = instance { return m }
+        let m = AppModel(demo: demo)
+        instance = m
+        return m
+    }
+
     // Accounts
     @Published private(set) var accounts: [Account] = []
     @Published var activeAccountId: String?
@@ -116,7 +125,10 @@ final class AppModel: ObservableObject {
     // Appearance
     @Published var settings = AppSettings() { didSet { if settings != oldValue { saveSettings(); settingsChanged(oldValue) } } }
     @Published var previewThemeId: String?
-    @Published var systemScheme: ColorScheme = .light
+    /// The macOS appearance (independent of the scheme the app forces on its own windows).
+    var systemScheme: ColorScheme {
+        NSApp?.effectiveAppearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? .dark : .light
+    }
     // Library
     @Published private(set) var library: [String: [RemoteRecording]] = [:]
     @Published private(set) var libraryLoading: Set<String> = []

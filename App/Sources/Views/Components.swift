@@ -114,6 +114,7 @@ struct AvatarView: View {
         .frame(width: size, height: size)
         .clipShape(Circle())
         .overlay(Circle().strokeBorder(ring ? p.accent : Color.white.opacity(0.6), lineWidth: ring ? 2 : 1))
+        .task(id: account?.id) { if let account { model.avatars.load(account) } }
         .accessibilityLabel(account?.title ?? "No account")
     }
 }

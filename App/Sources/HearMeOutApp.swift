@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import Combine
 import HearMeOutCore
 
 @main
@@ -10,9 +11,9 @@ struct HearMeOutApp: App {
     init() {
         let demo = ProcessInfo.processInfo.environment["HMO_DEMO"].flatMap(DemoScenario.init(rawValue:))
         if demo != nil { AppDelegate.log("app init start") }
-        let m = AppModel(demo: demo)
+        let m = AppModel.shared(demo: demo)
         if demo != nil { AppDelegate.log("model ready") }
-        if let look = ProcessInfo.processInfo.environment["HMO_APPEARANCE"] {
+        if let look = ProcessInfo.processInfo.environment["HMO_APPEARANCE"], demo != nil {
             m.settings.appearance = look == "dark" ? .dark : look == "light" ? .light : .themeDefault
         }
         _model = StateObject(wrappedValue: m)
@@ -82,6 +83,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let env = ProcessInfo.processInfo.environment
         guard env["HMO_DEMO"] != nil else { return }
         Self.log("did finish launching")
+        if let model = AppDelegate.model {
+            let counter = ChangeCounter()
+            counter.cancellable = model.objectWillChange.sink { _ in counter.increment() }
+            Self.counter = counter
+            DispatchQueue.global().async {
+                for second in 1...12 {
+                    Thread.sleep(forTimeInterval: 1)
+                    Self.log("t+\(second)s model changes: \(counter.take())")
+                }
+            }
+        }
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         guard let name = env["HMO_SNAPSHOT_NAME"] else { return }
@@ -106,13 +118,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    static var counter: ChangeCounter?
+
     @MainActor
     static func mainWindow() -> NSWindow? {
         NSApp.windows.filter { $0.contentView != nil && $0.frame.width > 500 && !$0.className.contains("StatusBar") }
             .max { $0.frame.width * $0.frame.height < $1.frame.width * $1.frame.height }
     }
 
-    static func log(_ s: String) {
+    nonisolated static func log(_ s: String) {
         FileHandle.standardError.write(Data("HMO: \(s)\n".utf8))
     }
 
@@ -172,4 +186,13 @@ struct WindowConfigurator: NSViewRepresentable {
         do { try data.write(to: url); AppDelegate.log("snapshot \(url.path) \(data.count) bytes") }
         catch { AppDelegate.log("snapshot write failed: \(error.localizedDescription)") }
     }
+}
+
+/// Counts change notifications (screenshot diagnostics only).
+final class ChangeCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var count = 0
+    var cancellable: AnyCancellable?
+    func increment() { lock.lock(); count += 1; lock.unlock() }
+    func take() -> Int { lock.lock(); defer { count = 0; lock.unlock() }; return count }
 }

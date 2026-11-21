@@ -49,7 +49,7 @@ enum DemoData {
         model.showOnboarding = scenario == .onboarding
 
         // Demo mode never runs the pipeline.
-        defer { model.engine.services = nil }
+        model.engine.services = nil
         switch scenario {
         case .library:
             model.tab = .library

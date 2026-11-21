@@ -10,6 +10,7 @@ struct RootView: View {
     @State private var dropTargeted = false
 
     var body: some View {
+        let _ = systemScheme   // re-render when macOS switches light/dark
         let resolved = model.resolvedTheme()
         ZStack {
             ThemeBackdrop(showMotif: model.settings.decorations)
@@ -59,8 +60,6 @@ struct RootView: View {
             loadDroppedFiles(providers)
             return true
         }
-        .onAppear { model.systemScheme = systemScheme }
-        .onChange(of: systemScheme) { _, s in model.systemScheme = s }
         .sheet(isPresented: $model.showImportSheet) { ImportSheet().environment(\.hmoTheme, resolved).environmentObject(model) }
         .frame(minWidth: 860, minHeight: 600)
     }

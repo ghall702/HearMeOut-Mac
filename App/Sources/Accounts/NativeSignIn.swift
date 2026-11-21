@@ -82,15 +82,20 @@ final class AvatarCache: ObservableObject {
     @Published private(set) var images: [String: NSImage] = [:]
     private var inFlight: Set<String> = []
 
-    func image(for account: Account) -> NSImage? {
-        if let i = images[account.id] { return i }
-        let file = fileURL(account.id)
-        if let i = NSImage(contentsOf: file) {
+    private var checked: Set<String> = []
+
+    /// Pure lookup — safe to call from a view body.
+    func image(for account: Account) -> NSImage? { images[account.id] }
+
+    /// Loads from disk or downloads once. Called from a view's `.task`, never during rendering.
+    func load(_ account: Account) {
+        guard images[account.id] == nil, !checked.contains(account.id) else { return }
+        checked.insert(account.id)
+        if let i = NSImage(contentsOf: fileURL(account.id)) {
             images[account.id] = i
-            return i
+            return
         }
         fetch(account)
-        return nil
     }
 
     func fileURL(_ id: String) -> URL {
@@ -100,6 +105,7 @@ final class AvatarCache: ObservableObject {
 
     func refresh(_ account: Account) {
         images[account.id] = nil
+        checked.remove(account.id)
         try? FileManager.default.removeItem(at: fileURL(account.id))
         fetch(account)
     }
