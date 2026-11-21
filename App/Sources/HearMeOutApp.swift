@@ -97,7 +97,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
         MainActor.assumeIsolated {
-            guard let model = AppDelegate.model, model.recorder.isActive else { return .terminateNow }
+            guard let model = AppDelegate.model, model.recorder.isActive, !model.isDemo else { return .terminateNow }
             let alert = NSAlert()
             alert.messageText = "You're still recording"
             alert.informativeText = "Quitting now stops the recording. Stop it first to keep it."
