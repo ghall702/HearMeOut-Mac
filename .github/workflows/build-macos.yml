@@ -119,12 +119,53 @@ jobs:
           scripts/make-dmg.sh "build/Build/Products/Release/Hear Me Out.app" "$DMG_NAME"
           shasum -a 256 "$DMG_NAME" | tee "$DMG_NAME.sha256"
 
+      - name: Create PKG installer
+        run: |
+          scripts/make-pkg.sh "build/Build/Products/Release/Hear Me Out.app" "Hear-Me-Out-1.0.0-build${{ github.run_number }}.pkg" "1.0.0.${{ github.run_number }}"
+          shasum -a 256 "Hear-Me-Out-1.0.0-build${{ github.run_number }}.pkg" | tee -a "$DMG_NAME.sha256"
+
+      - name: Publish release (latest download links)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          N=${{ github.run_number }}
+          TAG="v1.0.0-build$N"
+          # Stable names so README links (releases/latest/download/...) always fetch the newest build.
+          cp "$DMG_NAME" Hear-Me-Out.dmg
+          cp "Hear-Me-Out-1.0.0-build$N.pkg" Hear-Me-Out.pkg
+          cp scripts/install.sh install.sh
+          shasum -a 256 Hear-Me-Out.dmg Hear-Me-Out.pkg > SHA256SUMS.txt
+          cat > notes.md <<NOTES
+          ## Install Hear Me Out (build $N)
+
+          **Easiest:** download **Hear-Me-Out.pkg**, double-click it and follow the installer.
+          The first time, macOS may say it can't verify the developer: open **System Settings → Privacy & Security**, scroll down and click **Open Anyway**, then run the installer again.
+
+          **Or** download **Hear-Me-Out.dmg**, open it and drag Hear Me Out to Applications (then **Open Anyway** as above the first time you launch it).
+
+          **Or** paste this into Terminal:
+          \`\`\`
+          curl -fsSL https://github.com/${{ github.repository }}/releases/latest/download/install.sh | bash
+          \`\`\`
+
+          Requires an Apple Silicon Mac running macOS 14 or later. Built from ${{ github.sha }}.
+          NOTES
+          sed -i '' 's/^          //' notes.md
+          gh release create "$TAG" Hear-Me-Out.dmg Hear-Me-Out.pkg install.sh SHA256SUMS.txt \
+            --target "${{ github.sha }}" --title "Hear Me Out 1.0 (build $N)" --notes-file notes.md --latest
+          # Keep the releases page tidy: only the five newest builds.
+          gh release list --limit 100 --json tagName --jq '.[].tagName' | grep '^v1.0.0-build' | tail -n +6 | while read -r old; do
+            gh release delete "$old" --yes --cleanup-tag || true
+          done
+
       - name: Upload DMG artifact
         uses: actions/upload-artifact@v4
         with:
           name: Hear-Me-Out-DMG
           path: |
             ${{ env.DMG_NAME }}
+            Hear-Me-Out-1.0.0-build${{ github.run_number }}.pkg
             ${{ env.DMG_NAME }}.sha256
           if-no-files-found: error
 
