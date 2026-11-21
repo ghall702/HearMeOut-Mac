@@ -261,7 +261,7 @@ struct RecordOrb: View {
         .accessibilityElement()
         .accessibilityAddTraits(.isButton)
         .accessibilityLabel(isRecording ? "Stop recording" : isPaused ? "Stop recording (paused)" : "Start recording")
-        .accessibilityAction(action)
+        .accessibilityAction { action() }
     }
 
     private var orb: some View {
